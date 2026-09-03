@@ -5,7 +5,6 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_MM0stuYzn60rnZstXHJpgQ_bIBZUuPD
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false } })
 
 let pollId = null
-let observer = null
 let latestRows = []
 
 function esc(value='') {
@@ -58,9 +57,6 @@ function rowsHtml(rows, compact=false) {
 function renderLeaderboard() {
   if (location.hash !== '#host') return
 
-  const shell = document.querySelector('.shell')
-  if (!shell) return
-
   const hostGrid = document.querySelector('.host-grid')
   const finalPanel = !hostGrid ? document.querySelector('.panel h1')?.closest('.panel') : null
   const isLobby = Boolean(hostGrid?.querySelector('.room-code'))
@@ -110,22 +106,21 @@ function updateLandingCopy() {
 }
 
 function begin() {
-  if (observer) observer.disconnect()
-  observer = new MutationObserver(() => {
-    updateLandingCopy()
-    if (location.hash === '#host') renderLeaderboard()
-  })
-  observer.observe(document.body, { childList: true, subtree: true })
-
   if (pollId) clearInterval(pollId)
-  pollId = setInterval(fetchLeaderboard, 2000)
-  fetchLeaderboard()
+  pollId = setInterval(() => {
+    updateLandingCopy()
+    fetchLeaderboard()
+  }, 2000)
   updateLandingCopy()
+  fetchLeaderboard()
 }
 
 window.addEventListener('hashchange', () => {
   latestRows = []
-  if (location.hash === '#host') fetchLeaderboard()
+  setTimeout(() => {
+    updateLandingCopy()
+    if (location.hash === '#host') fetchLeaderboard()
+  }, 50)
 })
 
 begin()
