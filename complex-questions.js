@@ -73,33 +73,52 @@ function setText(el, text) {
   if (el && el.textContent !== text) el.textContent = text
 }
 
+let applying = false
 function applyComplexQuestion() {
-  const q = questionForCurrentRound()
-  if (!q) return
+  if (applying) return
+  applying = true
+  try {
+    const q = questionForCurrentRound()
+    if (!q) return
 
-  document.querySelectorAll('.scenario').forEach(scenario => {
-    setText(scenario.querySelector('h2'), q.text)
-    setText(scenario.querySelector('.rate'), q.rate)
-  })
+    document.querySelectorAll('.scenario').forEach(scenario => {
+      setText(scenario.querySelector('h2'), q.text)
+      setText(scenario.querySelector('.rate'), q.rate)
+    })
 
-  document.querySelectorAll('.bond-card').forEach(card => {
-    const blocks = card.querySelectorAll(':scope > div')
-    if (blocks[0]) setText(blocks[0].querySelector('b'), '1,000 บาท')
-    if (blocks[1]) setText(blocks[1].querySelector('b'), q.coupon)
-    if (blocks[2]) setText(blocks[2].querySelector('b'), '5 ปี')
-  })
+    document.querySelectorAll('.bond-card').forEach(card => {
+      const blocks = card.querySelectorAll(':scope > div')
+      if (blocks[0]) setText(blocks[0].querySelector('b'), '1,000 บาท')
+      if (blocks[1]) setText(blocks[1].querySelector('b'), q.coupon)
+      if (blocks[2]) setText(blocks[2].querySelector('b'), '5 ปี')
+    })
 
-  document.querySelectorAll('.reveal').forEach(box => {
-    const divs = box.querySelectorAll(':scope > div')
-    if (divs[0]) setText(divs[0], q.explanation)
-  })
+    document.querySelectorAll('.reveal').forEach(box => {
+      const divs = box.querySelectorAll(':scope > div')
+      if (divs[0]) setText(divs[0], q.explanation)
+    })
 
-  document.querySelectorAll('.student-reveal').forEach(box => {
-    const div = box.querySelector(':scope > div')
-    if (div) setText(div, q.explanation)
+    document.querySelectorAll('.student-reveal').forEach(box => {
+      const div = box.querySelector(':scope > div')
+      if (div) setText(div, q.explanation)
+    })
+  } finally {
+    applying = false
+  }
+}
+
+let scheduled = false
+function scheduleApply() {
+  if (scheduled) return
+  scheduled = true
+  requestAnimationFrame(() => {
+    scheduled = false
+    applyComplexQuestion()
   })
 }
 
-setInterval(applyComplexQuestion, 250)
-window.addEventListener('hashchange', () => setTimeout(applyComplexQuestion, 50))
-setTimeout(applyComplexQuestion, 50)
+const root = document.querySelector('#app') || document.body
+const observer = new MutationObserver(() => scheduleApply())
+observer.observe(root, { childList: true, subtree: true })
+window.addEventListener('hashchange', () => setTimeout(scheduleApply, 30))
+scheduleApply()
